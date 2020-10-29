@@ -1,5 +1,6 @@
 const express = require("express");
 const logger = require("morgan");
+const mongojs = require("mongojs");
 const mongoose = require("mongoose");
 
 const path = require("path");
@@ -28,33 +29,57 @@ mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/workout", { use
 //     });
 
 app.get("/stats", (req, res) => {
-    // If the user already has an account send them to the members page
-
     res.sendFile(path.join(__dirname, "./public/stats.html"));
-  });
+});
 
 app.get("/exercise", (req, res) => {
-    // If the user already has an account send them to the members page
-
     res.sendFile(path.join(__dirname, "./public/exercise.html"));
-  });
+});
+
 app.get("/api/workouts", (req, res) => {
     db.Workout.find({})
-    .then(workoutdb => {
-      res.json(workoutdb);
-    })
-    .catch(err => {
-      res.json(err);
-    });
+        .then(workoutdb => {
+            res.json(workoutdb);
+        })
+        .catch(err => {
+            res.json(err);
+        });
 });
 
 app.put("/api/workouts/:id", (req, res) => {
-    const id = req.params.id
+    const id = req.params.id;
+    const body = req.body;
     console.log(id);
-    res.send("hello api")
+    console.log(body);
+
+
+       db.Workout.update(
+           { 
+          _id:mongojs.ObjectId(id)
+           }, 
+           { $push: { exercises: body } } 
+           ).then((dbWo)=>{
+               console.log("done");
+            res.json(dbWo)
+           }).catch(err => {
+               console.log(err);
+            res.json(err);
+          });
 });
 
 app.post("/api/workouts", (req, res) => {
+    const wo = {
+        day: new Date(new Date().setDate(new Date().getDate() - 3)),
+        exercises: [],
+        totalDuration: 0
+    };
+    db.Workout.create(wo)
+        .then(workoutdb => {
+            console.log(workoutdb);
+        })
+        .catch(({ message }) => {
+            console.log(message);
+        });
     res.send("hello api")
 });
 
