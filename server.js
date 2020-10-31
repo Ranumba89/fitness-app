@@ -8,6 +8,7 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 
 const db = require("./models");
+const { Workout } = require("./models");
 
 const app = express();
 
@@ -27,7 +28,11 @@ mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/workout", { use
 //     .catch(({ message }) => {
 //         console.log(message);
 //     });
-
+let currentWorkoutId;
+// app.get("/", (req, res) => {
+//     currentWorkoutId = req.query.id
+//     res.sendFile(path.join(__dirname, "./public/index.html"));
+// });
 app.get("/stats", (req, res) => {
     res.sendFile(path.join(__dirname, "./public/stats.html"));
 });
@@ -47,24 +52,40 @@ app.get("/api/workouts", (req, res) => {
 });
 
 app.put("/api/workouts/:id", (req, res) => {
-    const id = req.params.id;
+    let id = req.params.id;
     const body = req.body;
+    if (id === "undefined") {
+        id = currentWorkoutId
+    }
     console.log(id);
     console.log(body);
+    const tdur = body.duration;
+    db.Workout.findOne(
+        {
+            _id: mongojs.ObjectId(id)
+        },
+    ).then((data) => {
+        const totalDuration = data.totalDuration + tdur;
+        // const exercises =data.exercises;
+        // exercises.push(body);
+        db.Workout.update(
+            {
+                _id: mongojs.ObjectId(id)
+            },
+            { $push: {exercises:body} ,
+             $set:{totalDuration: totalDuration} }
 
-
-       db.Workout.update(
-           { 
-          _id:mongojs.ObjectId(id)
-           }, 
-           { $push: { exercises: body } } 
-           ).then((dbWo)=>{
-               console.log("done");
+        ).then((dbWo) => {
+            console.log("done");
             res.json(dbWo)
-           }).catch(err => {
-               console.log(err);
+        }).catch(err => {
+            console.log(err);
             res.json(err);
-          });
+        });
+    }).catch(err => {
+        console.log(err);
+        res.json(err);
+    });
 });
 
 app.post("/api/workouts", (req, res) => {
@@ -76,15 +97,23 @@ app.post("/api/workouts", (req, res) => {
     db.Workout.create(wo)
         .then(workoutdb => {
             console.log(workoutdb);
-        })
-        .catch(({ message }) => {
-            console.log(message);
+            currentWorkoutId = workoutdb.id
+
+            res.json(Workout);
+        }).catch(err => {
+            console.log(err);
+            res.json(err);
         });
-    res.send("hello api")
 });
 
 app.get("/api/workouts/range", (req, res) => {
-    res.send("hello api")
+    db.Workout.find({})
+        .then(workoutdb => {
+            res.json(workoutdb);
+        })
+        .catch(err => {
+            res.json(err);
+        });
 });
 
 app.listen(PORT, () => {
