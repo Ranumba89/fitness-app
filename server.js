@@ -21,18 +21,7 @@ app.use(express.static("public"));
 
 mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/workout", { useNewUrlParser: true });
 
-// db.Workout.create({ name: "fitness" })
-//     .then(workoutdb => {
-//         console.log(workoutdb);
-//     })
-//     .catch(({ message }) => {
-//         console.log(message);
-//     });
-let currentWorkoutId;
-// app.get("/", (req, res) => {
-//     currentWorkoutId = req.query.id
-//     res.sendFile(path.join(__dirname, "./public/index.html"));
-// });
+
 app.get("/stats", (req, res) => {
     res.sendFile(path.join(__dirname, "./public/stats.html"));
 });
@@ -54,9 +43,7 @@ app.get("/api/workouts", (req, res) => {
 app.put("/api/workouts/:id", (req, res) => {
     let id = req.params.id;
     const body = req.body;
-    if (id === "undefined") {
-        id = currentWorkoutId
-    }
+   
     console.log(id);
     console.log(body);
     const tdur = body.duration;
@@ -66,8 +53,7 @@ app.put("/api/workouts/:id", (req, res) => {
         },
     ).then((data) => {
         const totalDuration = data.totalDuration + tdur;
-        // const exercises =data.exercises;
-        // exercises.push(body);
+       
         db.Workout.update(
             {
                 _id: mongojs.ObjectId(id)
@@ -90,16 +76,15 @@ app.put("/api/workouts/:id", (req, res) => {
 
 app.post("/api/workouts", (req, res) => {
     const wo = {
-        day: new Date(new Date().setDate(new Date().getDate() - 3)),
+        day: new Date(new Date().setDate(new Date().getDate())),
         exercises: [],
         totalDuration: 0
     };
     db.Workout.create(wo)
         .then(workoutdb => {
             console.log(workoutdb);
-            currentWorkoutId = workoutdb.id
 
-            res.json(Workout);
+            res.json(workoutdb);
         }).catch(err => {
             console.log(err);
             res.json(err);
